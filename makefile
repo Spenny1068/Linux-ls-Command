@@ -5,12 +5,12 @@ CC = gcc
 CFLAGS = -Wall
 
 # create executable
-all: main.o list.o
-	$(CC) $(CFLAGS) -o main main.o list.o 
+all: UnixLs.o list.o
+	$(CC) $(CFLAGS) -o UnixLs UnixLs.o list.o 
 
-# create main.o
-main.o: main.c
-	$(CC) $(CFLAGS) -c main.c
+# create UnixLs.o
+UnixLs.o: UnixLs.c
+	$(CC) $(CFLAGS) -c UnixLs.c
 
 clean:
-	rm main.o main
+	rm UnixLs.o UnixLs
