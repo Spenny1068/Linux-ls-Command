@@ -7,6 +7,9 @@
 #include <time.h>
 #include <stdio.h>
 
+/* helper functions */
+char* format_date(char* str, time_t val);
+
 int main(int argc, char* argv[]) {
 
     /* check command line arguments */
@@ -45,6 +48,7 @@ int main(int argc, char* argv[]) {
     struct dirent* pDirent = NULL;
     DIR* pDir = NULL;
     struct stat fileStat;
+    char mtime[36];
 
     /* get directory */
     dir = argv[argc - 1];
@@ -62,11 +66,11 @@ int main(int argc, char* argv[]) {
         /* ignore hidden files */
         if (pDirent->d_name[0] == '.') { continue; }
 
+        /* get file info */
         if (stat(pDirent->d_name, &fileStat) < 0) {
             printf("stat error\n");
             return 0;
         }
-
 
         if (iflag == 1) {
             /* file inode */
@@ -96,13 +100,7 @@ int main(int argc, char* argv[]) {
             printf("%d  ", fileStat.st_gid);
 
             /* date of last modification */
-            /* printf("%s  ", ctime(&fileStat.st_mtime)); */
-            char mtime[80];
-            time_t t = fileStat.st_mtime; /*st_mtime is type time_t */
-            struct tm lt;
-            localtime_r(&t, &lt); /* convert to struct tm */
-            strftime(mtime, sizeof mtime, "%a, %d %b %Y %T", &lt);
-            printf("%s\n", mtime);
+            printf("%s  ", format_date(mtime, fileStat.st_mtime));
 
             /* file size */
             printf("%lld  ",fileStat.st_size);
@@ -112,11 +110,15 @@ int main(int argc, char* argv[]) {
         printf("%s  ", pDirent->d_name);
 
         /* symbolic link */
-        printf("\t\t%s a symbolic link\n", (S_ISLNK(fileStat.st_mode)) ? "is" : "is not");
+        printf("\t%s a symbolic link\n", (S_ISLNK(fileStat.st_mode)) ? "is" : "is not");
     }
 
     closedir (pDir);
-
     return 0;
 }
 
+/* mmm dd yyyy hh:mm */
+char* format_date(char* str, time_t val) {
+    strftime(str, 36, "%b %d %Y %H:%M", localtime(&val));
+    return str;
+}
