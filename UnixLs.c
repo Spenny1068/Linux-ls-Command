@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <dirent.h>
+#include <time.h>
 #include <stdio.h>
 
 int main(int argc, char* argv[]) {
@@ -42,20 +44,77 @@ int main(int argc, char* argv[]) {
     char* dir = NULL;
     struct dirent* pDirent = NULL;
     DIR* pDir = NULL;
+    struct stat fileStat;
 
     /* get directory */
     dir = argv[argc - 1];
     printf ("iflag = %d, lflag = %d, dir = %s\n", iflag, lflag, dir);
 
-    pDir = opendir (dir);
+    /* open directory */
+    pDir = opendir(dir);
     if (pDir == NULL) {
         printf ("Cannot open directory '%s'\n", dir);
         return 0;
     }
 
     while ((pDirent = readdir(pDir)) != NULL) {
-        printf ("[%s]\n", pDirent->d_name);
+
+        /* ignore hidden files */
+        if (pDirent->d_name[0] == '.') { continue; }
+
+        if (stat(pDirent->d_name, &fileStat) < 0) {
+            printf("stat error\n");
+            return 0;
+        }
+
+
+        if (iflag == 1) {
+            /* file inode */
+            printf("%llu  ", fileStat.st_ino);
+        }
+
+        if (lflag == 1) {
+            /* file permissions */
+            printf((S_ISDIR(fileStat.st_mode)) ? "d" : "-");
+            printf((fileStat.st_mode & S_IRUSR) ? "r" : "-");
+            printf((fileStat.st_mode & S_IWUSR) ? "w" : "-");
+            printf((fileStat.st_mode & S_IXUSR) ? "x" : "-");
+            printf((fileStat.st_mode & S_IRGRP) ? "r" : "-");
+            printf((fileStat.st_mode & S_IWGRP) ? "w" : "-");
+            printf((fileStat.st_mode & S_IXGRP) ? "x" : "-");
+            printf((fileStat.st_mode & S_IROTH) ? "r" : "-");
+            printf((fileStat.st_mode & S_IWOTH) ? "w" : "-");
+            printf((fileStat.st_mode & S_IXOTH) ? "x  " : "-  ");
+
+            /* number of links */
+            printf("%d  ",fileStat.st_nlink);
+
+            /* user name of file owner */
+            printf("%d  ", fileStat.st_uid);
+
+            /* group name */
+            printf("%d  ", fileStat.st_gid);
+
+            /* date of last modification */
+            /* printf("%s  ", ctime(&fileStat.st_mtime)); */
+            char mtime[80];
+            time_t t = fileStat.st_mtime; /*st_mtime is type time_t */
+            struct tm lt;
+            localtime_r(&t, &lt); /* convert to struct tm */
+            strftime(mtime, sizeof mtime, "%a, %d %b %Y %T", &lt);
+            printf("%s\n", mtime);
+
+            /* file size */
+            printf("%lld  ",fileStat.st_size);
+        }
+
+        /* file name */
+        printf("%s  ", pDirent->d_name);
+
+        /* symbolic link */
+        printf("\t\t%s a symbolic link\n", (S_ISLNK(fileStat.st_mode)) ? "is" : "is not");
     }
+
     closedir (pDir);
 
     return 0;
