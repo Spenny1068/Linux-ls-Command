@@ -5,8 +5,8 @@ CC = gcc
 CFLAGS = -Wall
 
 # create executable
-all: UnixLs.o list.o
-	$(CC) $(CFLAGS) -o UnixLs UnixLs.o list.o 
+all: UnixLs.o
+	$(CC) $(CFLAGS) -o UnixLs UnixLs.o
 
 # create UnixLs.o
 UnixLs.o: UnixLs.c
