@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
         }
 
         /* -i option */
-        if (iflag == 1) { printf("%9llu  ", statbuf.st_ino); }
+        if (iflag == 1) { printf("%11lu  ", statbuf.st_ino); }
 
         /* -l option */
         if (lflag == 1) {
@@ -101,10 +101,10 @@ int main(int argc, char* argv[]) {
             printf((statbuf.st_mode & S_IWOTH) ? "w" : "-");
             printf((statbuf.st_mode & S_IXOTH) ? "x  " : "-  ");
 
-            printf("%2d  ",statbuf.st_nlink);                       /* number of links */
+            printf("%2ld  ",statbuf.st_nlink);                       /* number of links */
             printf("%2s  ", get_user(statbuf.st_uid));              /* user name */
             printf("%3s  ", get_group(statbuf.st_gid));             /* group name */
-            printf("%4lld  ",statbuf.st_size);                      /* file size */
+            printf("%6ld  ",statbuf.st_size);                      /* file size */
             printf("%17s  ", format_date(mtime, statbuf.st_mtime)); /* last mod */
         }
 
