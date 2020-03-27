@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
     opterr = 0;
 
     /* get ls options */
-    while ((option = getopt(argc, argv, "il:")) != -1) {
+    while ((option = getopt(argc, argv, "ilp:")) != -1) {
         switch (option) {
 
         case 'l':
@@ -83,6 +83,7 @@ int main(int argc, char* argv[]) {
         /* get info for this path */
         if (stat(fullpath, &fileStat) == -1) {
             printf("Stat error.\n");
+            printf("fullpath: %s\n", fullpath);
             continue;
         }
 
@@ -122,10 +123,10 @@ int main(int argc, char* argv[]) {
         }
 
         /* file name */
-        printf("%s", pDirent->d_name);
+        printf("%s\n", pDirent->d_name);
 
         /* symbolic link */
-        printf("\t%s symbolic\n", (S_ISLNK(fileStat.st_mode)) ? "is" : "is not");
+        /* printf("\t%s symbolic\n", (S_ISLNK(fileStat.st_mode)) ? "is" : "is not"); */
     }
     closedir (pDir);
     return 0;
