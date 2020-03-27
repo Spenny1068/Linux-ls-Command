@@ -15,20 +15,20 @@ char* format_date(char* str, time_t val);
 int main(int argc, char* argv[]) {
 
     /* check command line arguments */
-    if (argc < 3) {
+    if (argc < 2) {
         printf("Usage: %s [-il] [directory]\n", argv[0]);
         return 0;
     }
 
     int iflag = 0;
     int lflag = 0;
-    int c;
+    int option = 0;
 
     opterr = 0;
 
     /* get ls options */
-    while ((c = getopt (argc, argv, "il:")) != -1) {
-        switch (c) {
+    while ((option = getopt(argc, argv, "il:")) != -1) {
+        switch (option) {
 
         case 'l':
             lflag = 1;
@@ -119,12 +119,13 @@ int main(int argc, char* argv[]) {
             /* file size */
             printf("%4lld  ",fileStat.st_size);
 
-            /* file name */
-            printf("%s", pDirent->d_name);
-
-            /* symbolic link */
-            printf("\t%s symbolic\n", (S_ISLNK(fileStat.st_mode)) ? "is" : "is not");
         }
+
+        /* file name */
+        printf("%s", pDirent->d_name);
+
+        /* symbolic link */
+        printf("\t%s symbolic\n", (S_ISLNK(fileStat.st_mode)) ? "is" : "is not");
     }
     closedir (pDir);
     return 0;
