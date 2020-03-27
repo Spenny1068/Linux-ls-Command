@@ -53,14 +53,11 @@ int main(int argc, char* argv[]) {
     struct stat statbuf;
     char mtime[36];
 
-    /* get directory from command-line */
+    /* open provided directory */
     char* dir = argv[argc - 1];
-    printf ("iflag = %d, lflag = %d, dir = %s\n", iflag, lflag, dir);
-
-    /* open directory */
     DIR* pDir = opendir(dir);
     if (pDir == NULL) {
-        printf ("Failed to  open directory '%s'\n", dir);
+        printf ("Failed to open directory '%s'\n", dir);
         return 0;
     }
 
@@ -101,7 +98,7 @@ int main(int argc, char* argv[]) {
             printf((statbuf.st_mode & S_IWOTH) ? "w" : "-");
             printf((statbuf.st_mode & S_IXOTH) ? "x  " : "-  ");
 
-            printf("%2ld  ",statbuf.st_nlink);                       /* number of links */
+            printf("%3ld  ",statbuf.st_nlink);                       /* number of links */
             printf("%2s  ", get_user(statbuf.st_uid));              /* user name */
             printf("%3s  ", get_group(statbuf.st_gid));             /* group name */
             printf("%6ld  ",statbuf.st_size);                      /* file size */
@@ -124,6 +121,7 @@ char* format_date(char* str, time_t val) {
     return str;
 }
 
+/* returns group name from group id */
 char* get_group(gid_t grpNum) {
     struct group* grp = getgrgid(grpNum);
 
@@ -131,6 +129,7 @@ char* get_group(gid_t grpNum) {
     return NULL;
 }
 
+/* returns user name from user id */
 char* get_user(uid_t uid) {
     struct passwd* pw = getpwuid(uid);
 
