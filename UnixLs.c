@@ -6,6 +6,8 @@
 #include <dirent.h>
 #include <time.h>
 #include <stdio.h>
+#include <string.h>
+#include <limits.h>
 
 /* helper functions */
 char* format_date(char* str, time_t val);
@@ -44,13 +46,14 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    char fullpath[PATH_MAX + 1];
     char* dir = NULL;
     struct dirent* pDirent = NULL;
     DIR* pDir = NULL;
     struct stat fileStat;
     char mtime[36];
 
-    /* get directory */
+    /* get directory from command-line */
     dir = argv[argc - 1];
     printf ("iflag = %d, lflag = %d, dir = %s\n", iflag, lflag, dir);
 
@@ -61,15 +64,26 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    /* iteratively read the directory */
     while ((pDirent = readdir(pDir)) != NULL) {
 
         /* ignore hidden files */
         if (pDirent->d_name[0] == '.') { continue; }
 
-        /* get file info */
-        if (stat(pDirent->d_name, &fileStat) < 0) {
-            printf("stat error\n");
-            return 0;
+        /* build full path */
+        realpath(dir, fullpath);
+        strncat(fullpath, "/", 1);
+        strncat(fullpath, pDirent->d_name, sizeof(pDirent->d_name) + 1);
+
+        /* if its a directory, append */
+        if (S_ISDIR(fileStat.st_mode)) {
+            strncat(fullpath, "/", 1);
+        }
+
+        /* get info for this path */
+        if (stat(fullpath, &fileStat) == -1) {
+            printf("Stat error.\n");
+            continue;
         }
 
         if (iflag == 1) {
@@ -91,28 +105,27 @@ int main(int argc, char* argv[]) {
             printf((fileStat.st_mode & S_IXOTH) ? "x  " : "-  ");
 
             /* number of links */
-            printf("%d  ",fileStat.st_nlink);
+            printf("%2d  ",fileStat.st_nlink);
 
             /* user name of file owner */
-            printf("%d  ", fileStat.st_uid);
+            printf("%2d  ", fileStat.st_uid);
 
             /* group name */
-            printf("%d  ", fileStat.st_gid);
+            printf("%3d  ", fileStat.st_gid);
 
             /* date of last modification */
-            printf("%s  ", format_date(mtime, fileStat.st_mtime));
+            printf("%17s  ", format_date(mtime, fileStat.st_mtime));
 
             /* file size */
-            printf("%lld  ",fileStat.st_size);
+            printf("%4lld  ",fileStat.st_size);
+
+            /* file name */
+            printf("%s", pDirent->d_name);
+
+            /* symbolic link */
+            printf("\t%s symbolic\n", (S_ISLNK(fileStat.st_mode)) ? "is" : "is not");
         }
-
-        /* file name */
-        printf("%s  ", pDirent->d_name);
-
-        /* symbolic link */
-        printf("\t%s a symbolic link\n", (S_ISLNK(fileStat.st_mode)) ? "is" : "is not");
     }
-
     closedir (pDir);
     return 0;
 }
