@@ -52,6 +52,8 @@ int main(int argc, char* argv[]) {
     struct dirent* pDirent = NULL;
     struct stat statbuf;
     char mtime[36];
+    char* buf = malloc(PATH_MAX);
+    ssize_t nbytes = 0;
 
     /* open provided directory */
     char* dir = argv[argc - 1];
@@ -72,11 +74,8 @@ int main(int argc, char* argv[]) {
         strncat(fullpath, "/", 1);
         strncat(fullpath, pDirent->d_name, sizeof(pDirent->d_name) + 1);
 
-        /* if its a directory, append */
-        if (S_ISDIR(statbuf.st_mode)) { strncat(fullpath, "/", 1); }
-
         /* get info for this path */
-        if (stat(fullpath, &statbuf) == -1) {
+        if (lstat(fullpath, &statbuf) == -1) {
             printf("Stat error: %s\n", fullpath);
             continue;
         }
@@ -99,18 +98,30 @@ int main(int argc, char* argv[]) {
             printf((statbuf.st_mode & S_IXOTH) ? "x  " : "-  ");
 
             printf("%3ld  ",statbuf.st_nlink);                       /* number of links */
-            printf("%2s  ", get_user(statbuf.st_uid));              /* user name */
-            printf("%3s  ", get_group(statbuf.st_gid));             /* group name */
-            printf("%6ld  ",statbuf.st_size);                      /* file size */
-            printf("%17s  ", format_date(mtime, statbuf.st_mtime)); /* last mod */
+            printf("%2s  ", get_user(statbuf.st_uid));               /* user name */
+            printf("%3s  ", get_group(statbuf.st_gid));              /* group name */
+            printf("%6ld  ",statbuf.st_size);                        /* file size */
+            printf("%17s  ", format_date(mtime, statbuf.st_mtime));  /* last mod */
+
+            printf("%s ", pDirent->d_name);                         /* file name */
+
+            /* if its a symbolic link */
+            if (S_ISLNK(statbuf.st_mode)) {
+
+                nbytes = readlink(fullpath, buf, PATH_MAX);
+                if (nbytes == -1) { 
+                    printf("readlink error: %s\n", fullpath); 
+                }           
+                printf("-> %.*s\n", (int)nbytes, buf);
+            }
+            else { printf("\n"); }
         }
 
-        printf("%s\n", pDirent->d_name);                            /* file name */
-
-        /* symbolic link */
-        /* printf("\t%s symbolic\n", (S_ISLNK(statbuf.st_mode)) ? "is" : "is not"); */
+        /* no -l option */
+        else { printf("%s\n", pDirent->d_name); }
     }
 
+    free(buf);
     closedir (pDir);
     return 0;
 }
