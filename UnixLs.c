@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
         }
 
         /* -i option */
-        if (iflag == 1) { printf("%11lu  ", statbuf.st_ino); }
+        if (iflag == 1) { printf("%-21lu  ", statbuf.st_ino); }
 
         /* -l option */
         if (lflag == 1) {
@@ -97,11 +97,11 @@ int main(int argc, char* argv[]) {
             printf((statbuf.st_mode & S_IWOTH) ? "w" : "-");
             printf((statbuf.st_mode & S_IXOTH) ? "x  " : "-  ");
 
-            printf("%3ld  ",statbuf.st_nlink);                       /* number of links */
-            printf("%2s  ", get_user(statbuf.st_uid));               /* user name */
-            printf("%3s  ", get_group(statbuf.st_gid));              /* group name */
-            printf("%6ld  ",statbuf.st_size);                        /* file size */
-            printf("%17s  ", format_date(mtime, statbuf.st_mtime));  /* last mod */
+            printf("%-3ld  ",statbuf.st_nlink);                       /* number of links */
+            printf("%-2s  ", get_user(statbuf.st_uid));               /* user name */
+            printf("%-3s  ", get_group(statbuf.st_gid));              /* group name */
+            printf("%-8ld  ",statbuf.st_size);                        /* file size */
+            printf("%-17s  ", format_date(mtime, statbuf.st_mtime));  /* last mod */
 
             printf("%s ", pDirent->d_name);                         /* file name */
 
