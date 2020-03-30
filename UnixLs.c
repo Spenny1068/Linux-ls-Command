@@ -48,6 +48,8 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    char* dir = NULL;
+    DIR* pDir = NULL;
     char fullpath[PATH_MAX + 1];
     struct dirent* pDirent = NULL;
     struct stat statbuf;
@@ -55,70 +57,80 @@ int main(int argc, char* argv[]) {
     char* buf = malloc(PATH_MAX);
     ssize_t nbytes = 0;
 
-    /* open provided directory */
-    char* dir = argv[argc - 1];
-    DIR* pDir = opendir(dir);
-    if (pDir == NULL) {
-        printf ("Failed to open directory '%s'\n", dir);
-        return 0;
-    }
 
-    /* iteratively read the directory */
-    while ((pDirent = readdir(pDir)) != NULL) {
+    /* for every argument provided */
+    for(int index = optind; index < argc; index++) {
 
-        /* ignore hidden files */
-        if (pDirent->d_name[0] == '.') { continue; }
+        /* open provided directory */
+        dir = argv[index];
 
-        /* build full path */
-        realpath(dir, fullpath);
-        strncat(fullpath, "/", 1);
-        strncat(fullpath, pDirent->d_name, sizeof(pDirent->d_name) + 1);
-
-        /* get info for this path */
-        if (lstat(fullpath, &statbuf) == -1) {
-            printf("Stat error: %s\n", fullpath);
-            continue;
+        pDir = opendir(dir);
+        if (pDir == NULL) {
+            printf ("No such directory %s\n\n", dir);
+            return 0;
         }
 
-        /* -i option */
-        if (iflag == 1) { printf("%-21lu  ", statbuf.st_ino); }
+        if (optind != argc - 1) { printf("%s: \n", dir); }
 
-        /* -l option */
-        if (lflag == 1) {
+        /* iteratively read the directory */
+        while ((pDirent = readdir(pDir)) != NULL) {
 
-            printf((S_ISDIR(statbuf.st_mode)) ? "d" : "-");         /* permissions */
-            printf((statbuf.st_mode & S_IRUSR) ? "r" : "-");
-            printf((statbuf.st_mode & S_IWUSR) ? "w" : "-");
-            printf((statbuf.st_mode & S_IXUSR) ? "x" : "-");
-            printf((statbuf.st_mode & S_IRGRP) ? "r" : "-");
-            printf((statbuf.st_mode & S_IWGRP) ? "w" : "-");
-            printf((statbuf.st_mode & S_IXGRP) ? "x" : "-");
-            printf((statbuf.st_mode & S_IROTH) ? "r" : "-");
-            printf((statbuf.st_mode & S_IWOTH) ? "w" : "-");
-            printf((statbuf.st_mode & S_IXOTH) ? "x  " : "-  ");
+            /* ignore hidden files */
+            if (pDirent->d_name[0] == '.') { continue; }
 
-            printf("%-3ld  ",statbuf.st_nlink);                       /* number of links */
-            printf("%-2s  ", get_user(statbuf.st_uid));               /* user name */
-            printf("%-3s  ", get_group(statbuf.st_gid));              /* group name */
-            printf("%-8ld  ",statbuf.st_size);                        /* file size */
-            printf("%-17s  ", format_date(mtime, statbuf.st_mtime));  /* last mod */
+            /* build full path */
+            realpath(dir, fullpath);
+            strncat(fullpath, "/", 1);
+            strncat(fullpath, pDirent->d_name, sizeof(pDirent->d_name) + 1);
 
-            printf("%s ", pDirent->d_name);                         /* file name */
-
-            /* if its a symbolic link */
-            if (S_ISLNK(statbuf.st_mode)) {
-
-                nbytes = readlink(fullpath, buf, PATH_MAX);
-                if (nbytes == -1) { 
-                    printf("readlink error: %s\n", fullpath); 
-                }           
-                printf("-> %.*s\n", (int)nbytes, buf);
+            /* get info for this path */
+            if (lstat(fullpath, &statbuf) == -1) {
+                printf("Stat error: %s\n", fullpath);
+                continue;
             }
-            else { printf("\n"); }
+
+            /* -i option */
+            if (iflag == 1) { printf("%-21lu  ", statbuf.st_ino); }
+
+            /* -l option */
+            if (lflag == 1) {
+
+                printf((S_ISDIR(statbuf.st_mode)) ? "d" : "-");         /* permissions */
+                printf((statbuf.st_mode & S_IRUSR) ? "r" : "-");
+                printf((statbuf.st_mode & S_IWUSR) ? "w" : "-");
+                printf((statbuf.st_mode & S_IXUSR) ? "x" : "-");
+                printf((statbuf.st_mode & S_IRGRP) ? "r" : "-");
+                printf((statbuf.st_mode & S_IWGRP) ? "w" : "-");
+                printf((statbuf.st_mode & S_IXGRP) ? "x" : "-");
+                printf((statbuf.st_mode & S_IROTH) ? "r" : "-");
+                printf((statbuf.st_mode & S_IWOTH) ? "w" : "-");
+                printf((statbuf.st_mode & S_IXOTH) ? "x  " : "-  ");
+
+                printf("%-3ld  ",statbuf.st_nlink);                       /* number of links */
+                printf("%-2s  ", get_user(statbuf.st_uid));               /* user name */
+                printf("%-3s  ", get_group(statbuf.st_gid));              /* group name */
+                printf("%-8ld  ",statbuf.st_size);                        /* file size */
+                printf("%-17s  ", format_date(mtime, statbuf.st_mtime));  /* last mod */
+
+                printf("%s ", pDirent->d_name);                         /* file name */
+
+                /* if its a symbolic link */
+                if (S_ISLNK(statbuf.st_mode)) {
+
+                    nbytes = readlink(fullpath, buf, PATH_MAX);
+                    if (nbytes == -1) { 
+                        printf("readlink error: %s\n", fullpath); 
+                    }           
+                    printf("-> %.*s\n", (int)nbytes, buf);
+                }
+                else { printf("\n"); }
+            }
+
+            /* no -l option */
+            else { printf("%s\n", pDirent->d_name); }
         }
 
-        /* no -l option */
-        else { printf("%s\n", pDirent->d_name); }
+        printf("\n");
     }
 
     free(buf);
