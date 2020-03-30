@@ -57,6 +57,10 @@ int main(int argc, char* argv[]) {
     char* buf = malloc(PATH_MAX);
     ssize_t nbytes = 0;
 
+    if (optind >= argc) {
+        printf("No directory provided.\n");
+        return 0;
+    }
 
     /* for every argument provided */
     for(int index = optind; index < argc; index++) {
