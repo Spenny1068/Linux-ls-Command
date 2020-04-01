@@ -11,10 +11,23 @@
 #include <grp.h>
 #include <pwd.h>
 
+/* global variables */
+char* tok = NULL;
+DIR* pDir = NULL;
+char fullpath[PATH_MAX + 1];
+struct dirent* pDirent = NULL;
+struct stat statbuf;
+char mtime[36];
+char* buf = NULL;
+ssize_t nbytes = 0;
+
+
 /* helper functions */
 char* format_date(char* str, time_t val);
 char* get_user(uid_t uid);
 char* get_group(gid_t grpNum);
+void l_option();
+void i_option();
 
 int main(int argc, char* argv[]) {
 
@@ -48,44 +61,73 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    char* dir = NULL;
-    DIR* pDir = NULL;
-    char fullpath[PATH_MAX + 1];
-    struct dirent* pDirent = NULL;
-    struct stat statbuf;
-    char mtime[36];
-    char* buf = malloc(PATH_MAX);
-    ssize_t nbytes = 0;
-
     if (optind >= argc) {
-        printf("No directory provided.\n");
+        printf("No file ordirectory provided.\n");
         return 0;
     }
+    
+    buf = malloc(PATH_MAX);
 
     /* for every argument provided */
     for(int index = optind; index < argc; index++) {
 
-        /* open provided directory */
-        dir = argv[index];
+        /* open provided file or directory */
+        tok = argv[index];
 
-        pDir = opendir(dir);
-        if (pDir == NULL) {
-            printf ("No such directory %s\n\n", dir);
-            return 0;
+        pDir = opendir(tok);
+
+        /* token is a directory */
+        if (pDir != NULL) {
+
+            if (optind != argc - 1) { printf("%s: \n", tok); }
+
+            /* iteratively read the directory */
+            while ((pDirent = readdir(pDir)) != NULL) {
+
+                /* ignore hidden files */
+                if (pDirent->d_name[0] == '.') { continue; }
+
+                /* build full path */
+                realpath(tok, fullpath);
+                strncat(fullpath, "/", 1);
+                strncat(fullpath, pDirent->d_name, sizeof(pDirent->d_name) + 1);
+
+                /* get info for this path */
+                if (lstat(fullpath, &statbuf) == -1) {
+                    printf("Stat error: %s\n", fullpath);
+                    continue;
+                }
+
+                /* -i option */
+                if (iflag == 1) { i_option(); }
+
+                /* -l option */
+                if (lflag == 1) {
+
+                    l_option();
+                    printf("%s ", pDirent->d_name);                         /* file name */
+
+                    /* if its a symbolic link */
+                    if (S_ISLNK(statbuf.st_mode)) {
+
+                        nbytes = readlink(fullpath, buf, PATH_MAX);
+                        if (nbytes == -1) {  printf("readlink error: %s\n", fullpath); }           
+                        printf("-> %.*s\n", (int)nbytes, buf);
+                    }
+                    else { printf("\n"); }
+                }
+
+                /* no -l option */
+                else { printf("%s\n", pDirent->d_name); }
+            }
+            closedir (pDir);
         }
 
-        if (optind != argc - 1) { printf("%s: \n", dir); }
-
-        /* iteratively read the directory */
-        while ((pDirent = readdir(pDir)) != NULL) {
-
-            /* ignore hidden files */
-            if (pDirent->d_name[0] == '.') { continue; }
+        /* token is a file */
+        else if (access(tok, F_OK) != -1) {
 
             /* build full path */
-            realpath(dir, fullpath);
-            strncat(fullpath, "/", 1);
-            strncat(fullpath, pDirent->d_name, sizeof(pDirent->d_name) + 1);
+            realpath(tok, fullpath);
 
             /* get info for this path */
             if (lstat(fullpath, &statbuf) == -1) {
@@ -93,52 +135,35 @@ int main(int argc, char* argv[]) {
                 continue;
             }
 
-            /* -i option */
-            if (iflag == 1) { printf("%-21lu  ", statbuf.st_ino); }
+            /* i option */
+            if (iflag == 1) { i_option(); }
 
-            /* -l option */
-            if (lflag == 1) {
+            /* l option */
+            if (lflag == 1) { 
 
-                printf((S_ISDIR(statbuf.st_mode)) ? "d" : "-");         /* permissions */
-                printf((statbuf.st_mode & S_IRUSR) ? "r" : "-");
-                printf((statbuf.st_mode & S_IWUSR) ? "w" : "-");
-                printf((statbuf.st_mode & S_IXUSR) ? "x" : "-");
-                printf((statbuf.st_mode & S_IRGRP) ? "r" : "-");
-                printf((statbuf.st_mode & S_IWGRP) ? "w" : "-");
-                printf((statbuf.st_mode & S_IXGRP) ? "x" : "-");
-                printf((statbuf.st_mode & S_IROTH) ? "r" : "-");
-                printf((statbuf.st_mode & S_IWOTH) ? "w" : "-");
-                printf((statbuf.st_mode & S_IXOTH) ? "x  " : "-  ");
-
-                printf("%-3ld  ",statbuf.st_nlink);                       /* number of links */
-                printf("%-2s  ", get_user(statbuf.st_uid));               /* user name */
-                printf("%-3s  ", get_group(statbuf.st_gid));              /* group name */
-                printf("%-8ld  ",statbuf.st_size);                        /* file size */
-                printf("%-17s  ", format_date(mtime, statbuf.st_mtime));  /* last mod */
-
-                printf("%s ", pDirent->d_name);                         /* file name */
+                l_option();
+                printf("%s", tok);          /* file name */
 
                 /* if its a symbolic link */
                 if (S_ISLNK(statbuf.st_mode)) {
 
                     nbytes = readlink(fullpath, buf, PATH_MAX);
-                    if (nbytes == -1) { 
-                        printf("readlink error: %s\n", fullpath); 
-                    }           
+                    if (nbytes == -1) { printf("readlink error: %s\n", fullpath); }           
                     printf("-> %.*s\n", (int)nbytes, buf);
                 }
                 else { printf("\n"); }
             }
 
-            /* no -l option */
-            else { printf("%s\n", pDirent->d_name); }
+            /* no l option */
+            else  { printf("%s\n", tok); }
         }
 
+        /* not a file or directory */
+        else { printf("%s: %s: no such file or directory", argv[0], tok); }
         printf("\n");
     }
 
-    free(buf);
-    closedir (pDir);
+    /* free(buf); */
     return 0;
 }
 
@@ -163,3 +188,24 @@ char* get_user(uid_t uid) {
     if (pw) { return pw->pw_name; } 
     return NULL;
 }
+
+void l_option() {
+    printf((S_ISDIR(statbuf.st_mode)) ? "d" : "-");         /* permissions */
+    printf((statbuf.st_mode & S_IRUSR) ? "r" : "-");
+    printf((statbuf.st_mode & S_IWUSR) ? "w" : "-");
+    printf((statbuf.st_mode & S_IXUSR) ? "x" : "-");
+    printf((statbuf.st_mode & S_IRGRP) ? "r" : "-");
+    printf((statbuf.st_mode & S_IWGRP) ? "w" : "-");
+    printf((statbuf.st_mode & S_IXGRP) ? "x" : "-");
+    printf((statbuf.st_mode & S_IROTH) ? "r" : "-");
+    printf((statbuf.st_mode & S_IWOTH) ? "w" : "-");
+    printf((statbuf.st_mode & S_IXOTH) ? "x  " : "-  ");
+
+    printf("%-3ld  ",statbuf.st_nlink);                       /* number of links */
+    printf("%-2s  ", get_user(statbuf.st_uid));               /* user name */
+    printf("%-3s  ", get_group(statbuf.st_gid));              /* group name */
+    printf("%-8ld  ",statbuf.st_size);                        /* file size */
+    printf("%-17s  ", format_date(mtime, statbuf.st_mtime));  /* last mod */
+}
+
+void i_option() { printf("%-21lu  ", statbuf.st_ino); }
