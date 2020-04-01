@@ -31,12 +31,6 @@ void i_option();
 
 int main(int argc, char* argv[]) {
 
-    /* check command line arguments */
-    if (argc < 2) {
-        printf("Usage: %s [-il] [directory]\n", argv[0]);
-        return 1;
-    }
-
     int iflag = 0;
     int lflag = 0;
     int option = 0;
@@ -61,11 +55,11 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    if (optind >= argc) {
-        printf("No file ordirectory provided.\n");
-        return 0;
+    /* raw ls */
+    if (optind == argc) {
+        argv[optind] = ".";
+        argc++;
     }
-    
     buf = malloc(PATH_MAX);
 
     /* for every argument provided */
@@ -73,7 +67,6 @@ int main(int argc, char* argv[]) {
 
         /* open provided file or directory */
         tok = argv[index];
-
         pDir = opendir(tok);
 
         /* token is a directory */
