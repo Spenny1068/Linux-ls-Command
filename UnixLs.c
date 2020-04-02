@@ -12,15 +12,10 @@
 #include <pwd.h>
 
 /* global variables */
-char* tok = NULL;
-DIR* pDir = NULL;
 char fullpath[PATH_MAX + 1];
-struct dirent* pDirent = NULL;
-struct stat statbuf;
 char mtime[36];
-char* buf = NULL;
-ssize_t nbytes = 0;
-
+char* tok;
+struct stat statbuf;
 
 /* helper functions */
 char* format_date(char* str, time_t val);
@@ -55,12 +50,18 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    /* raw ls */
+    /* initialize variables */
+    ssize_t nbytes = 0;
+    tok = NULL;
+    char* buf = malloc(PATH_MAX);
+    DIR* pDir = NULL;
+    struct dirent* pDirent = NULL;
+
+    /* raw ls - no options provided */
     if (optind == argc) {
         argv[optind] = ".";
         argc++;
     }
-    buf = malloc(PATH_MAX);
 
     /* for every argument provided */
     for(int index = optind; index < argc; index++) {
@@ -119,11 +120,8 @@ int main(int argc, char* argv[]) {
         /* token is a file */
         else if (access(tok, F_OK) != -1) {
 
-            /* build full path */
-            realpath(tok, fullpath);
-
             /* get info for this path */
-            if (lstat(fullpath, &statbuf) == -1) {
+            if (lstat(tok, &statbuf) == -1) {
                 printf("Stat error: %s\n", fullpath);
                 continue;
             }
@@ -140,8 +138,8 @@ int main(int argc, char* argv[]) {
                 /* if its a symbolic link */
                 if (S_ISLNK(statbuf.st_mode)) {
 
-                    nbytes = readlink(fullpath, buf, PATH_MAX);
-                    if (nbytes == -1) { printf("readlink error: %s\n", fullpath); }           
+                    nbytes = readlink(tok, buf, PATH_MAX);
+                    if (nbytes == -1) { printf("readlink error: %s\n", tok); }           
                     printf("-> %.*s\n", (int)nbytes, buf);
                 }
                 else { printf("\n"); }
@@ -156,7 +154,7 @@ int main(int argc, char* argv[]) {
         printf("\n");
     }
 
-    /* free(buf); */
+    free(buf);
     return 0;
 }
 
@@ -197,7 +195,7 @@ void l_option() {
     printf("%-3ld  ",statbuf.st_nlink);                       /* number of links */
     printf("%-2s  ", get_user(statbuf.st_uid));               /* user name */
     printf("%-3s  ", get_group(statbuf.st_gid));              /* group name */
-    printf("%-8ld  ",statbuf.st_size);                        /* file size */
+    printf("%-8ld  ", statbuf.st_size);                        /* file size */
     printf("%-17s  ", format_date(mtime, statbuf.st_mtime));  /* last mod */
 }
 
