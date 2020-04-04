@@ -181,7 +181,9 @@ char* get_user(uid_t uid) {
 }
 
 void l_option() {
-    printf((S_ISDIR(statbuf.st_mode)) ? "d" : "-");         /* permissions */
+    if ((S_ISDIR(statbuf.st_mode))) { printf("d"); } 
+    else if (S_ISLNK(statbuf.st_mode)){ printf("l"); }
+    else { printf("-"); }
     printf((statbuf.st_mode & S_IRUSR) ? "r" : "-");
     printf((statbuf.st_mode & S_IWUSR) ? "w" : "-");
     printf((statbuf.st_mode & S_IXUSR) ? "x" : "-");
