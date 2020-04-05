@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
                 }
 
                 /* if its a symbolic link */
-                if (S_ISLNK(statbuf.st_mode) && (iflag == 1 || lflag == 1)) {
+                if (S_ISLNK(statbuf.st_mode) && lflag == 1) {
                     nbytes = readlink(tok, buf, PATH_MAX);
                     if (nbytes == -1) {  printf("readlink error: %s\n", fullpath); }           
                     if (iflag == 1 && lflag == 1) {
