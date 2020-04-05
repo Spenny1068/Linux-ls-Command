@@ -66,7 +66,6 @@ int main(int argc, char* argv[]) {
     /* for every argument provided */
     for(int index = optind; index < argc; index++) {
 
-        /* open provided file or directory */
         tok = argv[index];
         pDir = opendir(tok);
 
@@ -80,6 +79,32 @@ int main(int argc, char* argv[]) {
 
                 /* ignore hidden files */
                 if (pDirent->d_name[0] == '.') { continue; }
+
+                /* get info for this path */
+                if (lstat(tok, &statbuf) == -1) {
+                    printf("Stat error: %s\n", fullpath);
+                    continue;
+                }
+
+                /* if its a symbolic link */
+                if (S_ISLNK(statbuf.st_mode) && (iflag == 1 || lflag == 1)) {
+                    nbytes = readlink(tok, buf, PATH_MAX);
+                    if (nbytes == -1) {  printf("readlink error: %s\n", fullpath); }           
+                    if (iflag == 1 && lflag == 1) {
+                        i_option();
+                        l_option();
+                        printf("%s -> %.*s\n", tok, (int)nbytes, buf);
+                    }
+                    else if (iflag == 1) { 
+                        i_option();
+                        printf("%s\n", tok);
+                    }
+                    else if (lflag == 1) { 
+                        l_option(); 
+                        printf("%s -> %.*s\n", tok, (int)nbytes, buf);
+                    }
+                    break;
+                }
 
                 /* build full path */
                 realpath(tok, fullpath);
